@@ -37,6 +37,7 @@
 #include <Wire.h>
 #include <LCD.h>
 #include <LiquidCrystal_I2C.h>
+#include "Button.h"
 
 
 //hx711
@@ -128,18 +129,20 @@ byte customChar5[8] = {
 
 void updateTargetLED();
 void updateAnimation();
-void risingEdge(bool);
+bool risingEdge(bool);
 
 HX711 scale(DOUT, CLK);
 
 LiquidCrystal_I2C  lcd(I2C_ADDR, En_pin, Rw_pin, Rs_pin, D4_pin, D5_pin, D6_pin, D7_pin);
 
-
+Button button(2);
 
 void setup() {
 	Serial.begin(9600);
 
-	pinMode(buttonPin, INPUT_PULLUP);
+	//pinMode(buttonPin, INPUT_PULLUP);
+
+
 	pinMode(ledPin, OUTPUT);
 
 	lcd.begin(16, 2); //  <<----- My LCD was 16x2
@@ -147,7 +150,9 @@ void setup() {
 	// Switch on the backlight
 	lcd.setBacklightPin(BACKLIGHT_PIN, POSITIVE);
 	lcd.setBacklight(HIGH);
-	lcd.home(); // go home
+
+	/*lcd.home();*/
+	lcd.setCursor(1, 0);
 
 	lcd.print(F("Waga"));
 	
@@ -178,8 +183,22 @@ void loop()
 	lcd.setCursor(6, 1);
 	lcd.print(F("g"));
 
-	risingEdge(digitalRead(buttonPin));
+	//isLongOrShortState(digitalRead(buttonPin));
+
+	button.isButtonPressed();
 	
+	if (risingEdge(button.isLongPressed))
+	{
+		targetLedState = !targetLedState;
+		digitalWrite(ledPin, targetLedState);
+	}
+	////////////////////////////////////////////////////Przekazać wskaźnik na fukcję do risingEdge, żeby nie sprawdzać warunków w loop'ie 
+	if (risingEdge(button.isShortPressed))
+	{
+		scale.tare();
+	}
+	
+
 	currentMillis = millis();   // capture the latest value of millis()
 							  
 
@@ -189,15 +208,17 @@ void loop()
 
 
 
-void risingEdge(bool pin)
+bool risingEdge(bool pin)
 {
 	bool edge = pin && !oldImpulse;
 	oldImpulse = pin;
-	if (edge == 1)
+
+	return edge;
+
+	/*if (edge == 1)
 	{
 		scale.tare();
-
-	}
+	}*/
 }
 void updateAnimation()
 {
