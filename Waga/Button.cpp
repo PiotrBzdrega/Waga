@@ -4,45 +4,94 @@
 
 
 Button::Button(int arduinoPin)
-	: pin (arduinoPin)
+	: buttonPin (arduinoPin)
 {
-	pinMode(pin, INPUT_PULLUP);
+	pinMode(buttonPin, INPUT_PULLUP);
 }
 
 
-
-
-bool Button::isButtonPressed()
+void Button::isButtonPressed()
 {
-	isShortPressed = 0; //ustawiam zmienne aby by³y pozytywne prez jeden cykl.
-	isLongPressed = 0;
-
-	currentState = digitalRead(pin);
-
-	if (currentState != prevState)
+	if (digitalRead(buttonPin) == PRESSED) //button is pressed
 	{
-		delay(debonuce);
-		currentState = digitalRead(pin);
+		if (buttonActive == false) //if it is first cycle with pressed button
+			buttonActive = true, buttonTimer = millis(); 
 
-		if (currentState==PRESSED)
+
+		buttonPressDuration = millis() - buttonTimer;
+
+		if ((buttonPressDuration > longPressThreshold) && (longPressActive == false))
 		{
-			counter = millis();
-		}
+			longPressActive = true;
+			Serial.println("Long press true");
 
-		if (currentState == NOT_PRESSED)
-		{
-			unsigned long currentMillis = millis();
-
-			if (currentMillis-counter>=longPress)
-			{
-				isLongPressed = 1;
-			}
-			else if (currentMillis - counter >= shortPress)
-			{
-				isShortPressed = 1;
-			}
 		}
-		prevState = currentState;
+			 
 	}
+	else
+	{
+		if (shortPressActive == true)
+		{
+			shortPressActive = false;
+			Serial.println("Short press false");
+		}
+			 
+
+		if (buttonActive==true)
+		{
+
+			if (longPressActive == true)
+			{
+				longPressActive = false;
+				Serial.println("Long press false");
+			}
+				 
+			else
+			{
+				if (buttonPressDuration > debounceThreshold)
+				{
+					shortPressActive = true;
+					Serial.println("Short press true");
+				}
+					 
+			}
+
+			buttonActive = false;// reset the button active status
+		}
+	}
+	
 }
+bool Button::isShortPress()
+{
+	return risingEdge(shortPressActive, oldSignalShort);
+}
+
+bool Button::isLongPress()
+{
+	return risingEdge(longPressActive, oldSignalLong);
+}
+
+bool Button::risingEdge(bool signal,bool &oldSignal)
+{
+	bool edge = signal && !oldSignal;
+	oldSignal = signal;
+
+	return edge;
+}
+
+
+
+
+void Button::executeIfPressed(void (*func)(void),const char * longOrShort)   //const char * longOrShort
+{
+	
+
+	if (longOrShort == "short" && isShortPress())
+		 func();
+	else if (longOrShort == "long" && isLongPress())
+		func();
+}
+
+
+
 

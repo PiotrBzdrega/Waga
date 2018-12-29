@@ -130,6 +130,8 @@ byte customChar5[8] = {
 void updateTargetLED();
 void updateAnimation();
 bool risingEdge(bool);
+void alterLed();
+void tara();
 
 HX711 scale(DOUT, CLK);
 
@@ -183,20 +185,15 @@ void loop()
 	lcd.setCursor(6, 1);
 	lcd.print(F("g"));
 
-	//isLongOrShortState(digitalRead(buttonPin));
+	
+	
+	button.executeIfPressed(tara, "long");
+	
+	button.executeIfPressed(alterLed, "short");
+
+	//spróbować skrócić
 
 	button.isButtonPressed();
-	
-	if (risingEdge(button.isLongPressed))
-	{
-		targetLedState = !targetLedState;
-		digitalWrite(ledPin, targetLedState);
-	}
-	////////////////////////////////////////////////////Przekazać wskaźnik na fukcję do risingEdge, żeby nie sprawdzać warunków w loop'ie 
-	if (risingEdge(button.isShortPressed))
-	{
-		scale.tare();
-	}
 	
 
 	currentMillis = millis();   // capture the latest value of millis()
@@ -207,18 +204,26 @@ void loop()
 
 
 
-
-bool risingEdge(bool pin)
+void tara()
 {
-	bool edge = pin && !oldImpulse;
-	oldImpulse = pin;
+	scale.tare();
+}
+
+void alterLed() 
+{
+	targetLedState = !targetLedState;
+	digitalWrite(ledPin, targetLedState);
+
+}
+
+bool risingEdge(bool signal)
+{
+	bool edge = signal && !oldImpulse;
+	oldImpulse = signal;
 
 	return edge;
 
-	/*if (edge == 1)
-	{
-		scale.tare();
-	}*/
+
 }
 void updateAnimation()
 {
@@ -270,3 +275,6 @@ void updateTargetLED()
 
 	}
 }
+
+
+
